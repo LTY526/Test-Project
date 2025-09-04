@@ -1,0 +1,44 @@
+name: Upload project files to S3 based on version in config.json
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  AWS_ROLE_ARN: arn:aws:iam::850995554155:role/LTY526__Test-Project-CICD-Role
+  AWS_REGION: ap-southeast-1
+  S3_BUCKET: cicd-test-123456
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v5
+      with:
+        role-to-assume: ${{ env.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Extract version from package.json
+      id: get_version
+      run: |
+        VERSION=$(cat config.json \
+          | grep version \
+          | head -1 \
+          | awk -F: '{ print $2 }' \
+          | sed 's/[",]//g' \
+          | xargs)
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+    - name: Build and upload static files to S3
+      run: |
+        npm i && npm run build
+        aws s3 cp . s3://${{ env.S3_BUCKET }}/${{ env.VERSION }}/ --recursive
