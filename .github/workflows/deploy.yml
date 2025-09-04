@@ -42,4 +42,6 @@ jobs:
     - name: Build and upload static files to S3
       run: |
         npm i && npm run build
-        aws s3 cp . s3://${{ env.S3_BUCKET }}/${{ env.VERSION }}/ --recursive
+        aws s3 cp . s3://${{ env.S3_BUCKET }}/${{ env.VERSION }}/ --recursive \
+          --exclude ".git/*" \
+          --exclude ".github/*"
